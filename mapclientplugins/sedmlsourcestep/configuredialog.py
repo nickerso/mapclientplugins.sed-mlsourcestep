@@ -1,4 +1,5 @@
 
+import os.path
 
 from PySide import QtGui
 from mapclientplugins.sedmlsourcestep.ui_configuredialog import Ui_ConfigureDialog
@@ -27,11 +28,15 @@ class ConfigureDialog(QtGui.QDialog):
         # Set a place holder for a callable that will get set from the step.
         # We will use this method to decide whether the identifier is unique.
         self.identifierOccursCount = None
+        
+        self._previousLocation = ''
 
         self._makeConnections()
 
     def _makeConnections(self):
-        self._ui.lineEdit0.textChanged.connect(self.validate)
+        self._ui.lineEditIdentifier.textChanged.connect(self.validate)
+        self._ui.lineEditLocation.textChanged.connect(self.validate)
+        self._ui.pushButtonLocation.clicked.connect(self._locationButtonClicked)
 
     def accept(self):
         '''
@@ -55,14 +60,20 @@ class ConfigureDialog(QtGui.QDialog):
         '''
         # Determine if the current identifier is unique throughout the workflow
         # The identifierOccursCount method is part of the interface to the workflow framework.
-        value = self.identifierOccursCount(self._ui.lineEdit0.text())
-        valid = (value == 0) or (value == 1 and self._previousIdentifier == self._ui.lineEdit0.text())
-        if valid:
-            self._ui.lineEdit0.setStyleSheet(DEFAULT_STYLE_SHEET)
+        value = self.identifierOccursCount(self._ui.lineEditIdentifier.text())
+        valid_identifier = (value == 0) or (value == 1 and self._previousIdentifier == self._ui.lineEditIdentifier.text())
+        if valid_identifier:
+            self._ui.lineEditIdentifier.setStyleSheet(DEFAULT_STYLE_SHEET)
         else:
-            self._ui.lineEdit0.setStyleSheet(INVALID_STYLE_SHEET)
+            self._ui.lineEditIdentifier.setStyleSheet(INVALID_STYLE_SHEET)
 
-        return valid
+        valid_location = os.path.isdir(self._ui.lineEditLocation.text())
+        if valid_location:
+            self._ui.lineEditLocation.setStyleSheet(DEFAULT_STYLE_SHEET)
+        else:
+            self._ui.lineEditLocation.setStyleSheet(INVALID_STYLE_SHEET)
+
+        return valid_identifier and valid_location
 
     def getConfig(self):
         '''
@@ -70,10 +81,11 @@ class ConfigureDialog(QtGui.QDialog):
         set the _previousIdentifier value so that we can check uniqueness of the
         identifier over the whole of the workflow.
         '''
-        self._previousIdentifier = self._ui.lineEdit0.text()
+        self._previousIdentifier = self._ui.lineEditIdentifier.text()
+        self._previousLocation = self._ui.lineEditLocation.text()
         config = {}
-        config['identifier'] = self._ui.lineEdit0.text()
-        config['Location'] = self._ui.lineEdit1.text()
+        config['identifier'] = self._ui.lineEditIdentifier.text()
+        config['Location'] = self._ui.lineEditLocation.text()
         return config
 
     def setConfig(self, config):
@@ -83,6 +95,13 @@ class ConfigureDialog(QtGui.QDialog):
         identifier over the whole of the workflow.
         '''
         self._previousIdentifier = config['identifier']
-        self._ui.lineEdit0.setText(config['identifier'])
-        self._ui.lineEdit1.setText(config['Location'])
+        self._previousLocation = config['Location']
+        self._ui.lineEditIdentifier.setText(config['identifier'])
+        self._ui.lineEditLocation.setText(config['Location'])
+
+    def _locationButtonClicked(self):
+        location = QtGui.QFileDialog.getExistingDirectory(self, 'Select Location', self._previousLocation)
+        if location:
+            self._previousLocation = location
+            self._ui.lineEditLocation.setText(location)
 
