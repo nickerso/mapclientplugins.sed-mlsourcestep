@@ -4,6 +4,8 @@ MAP Client Plugin Step
 '''
 import json
 
+from PySide import QtGui
+
 from mapclient.mountpoints.workflowstep import WorkflowStepMountPoint
 from mapclientplugins.sedmlsourcestep.configuredialog import ConfigureDialog
 
@@ -23,8 +25,6 @@ class SEDMLSourceStep(WorkflowStepMountPoint):
         self.addPort(('http://physiomeproject.org/workflow/1.0/rdf-schema#port',
                       'http://physiomeproject.org/workflow/1.0/rdf-schema#provides',
                       'sedml'))
-        # Port data:
-        self._portData0 = None # sedml
         # Config:
         self._config = {}
         self._config['identifier'] = ''
@@ -46,7 +46,7 @@ class SEDMLSourceStep(WorkflowStepMountPoint):
         The index is the index of the port in the port list.  If there is only one
         provides port for this step then the index can be ignored.
         '''
-        return self._portData0 # sedml
+        return self._config['Location'] # sedml
 
     def configure(self):
         '''
@@ -56,7 +56,7 @@ class SEDMLSourceStep(WorkflowStepMountPoint):
         then set:
             self._configured = True
         '''
-        dlg = ConfigureDialog()
+        dlg = ConfigureDialog(QtGui.QApplication.activeWindow().currentWidget())
         dlg.identifierOccursCount = self._identifierOccursCount
         dlg.setConfig(self._config)
         dlg.validate()
